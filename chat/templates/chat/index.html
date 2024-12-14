@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Chat Room</title>
+  <style>
+    #chat-log {
+      width: 100%;
+      max-width: 800px;
+      height: 400px;
+      margin-bottom: 20px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    #chat-message-input {
+      width: 100%;
+      max-width: 800px;
+      padding: 10px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    #chat-message-submit {
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    #chat-message-submit:hover {
+      background-color: #45a049;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .status {
+      margin-bottom: 20px;
+      padding: 10px;
+      border-radius: 4px;
+    }
+
+    .connected {
+      background-color: #dff0d8;
+      color: #3c763d;
+    }
+
+    .disconnected {
+      background-color: #f2dede;
+      color: #a94442;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>Django WebSocket Chat</h1>
+    <div id="connection-status" class="status">Connecting...</div>
+    <textarea id="chat-log" readonly></textarea><br>
+    <input id="chat-message-input" type="text" placeholder="Type your message here..."><br>
+    <input id="chat-message-submit" type="button" value="Send">
+  </div>
+
+  <script>
+    const statusDiv = document.querySelector('#connection-status');
+    const chatSocket = new WebSocket(
+      'ws://' + window.location.host + '/ws/chat/'
+    );
+
+    chatSocket.onopen = function (e) {
+      console.log('WebSocket connection established');
+      statusDiv.textContent = 'Connected!';
+      statusDiv.className = 'status connected';
+    };
+
+    chatSocket.onmessage = function (e) {
+      console.log('Message received:', e.data);
+      const data = JSON.parse(e.data);
+      document.querySelector('#chat-log').value += (data.message + '\n');
+    };
+
+    chatSocket.onclose = function (e) {
+      console.log('WebSocket connection closed');
+      statusDiv.textContent = 'Disconnected';
+      statusDiv.className = 'status disconnected';
+    };
+
+    chatSocket.onerror = function (e) {
+      console.error('WebSocket error:', e);
+      statusDiv.textContent = 'Error occurred';
+      statusDiv.className = 'status disconnected';
+    };
+
+    document.querySelector('#chat-message-input').focus();
+    document.querySelector('#chat-message-input').onkeyup = function (e) {
+      if (e.keyCode === 13) {  // enter key
+        document.querySelector('#chat-message-submit').click();
+      }
+    };
+
+    document.querySelector('#chat-message-submit').onclick = function (e) {
+      const messageInputDom = document.querySelector('#chat-message-input');
+      const message = messageInputDom.value;
+      if (message.trim()) {
+        chatSocket.send(JSON.stringify({
+          'message': message
+        }));
+        messageInputDom.value = '';
+      }
+    };
+  </script>
+</body>
+
+</html>
